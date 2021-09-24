@@ -3,17 +3,20 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-ARG IMAGE_REGISTRY=registry.centos.org
-FROM ${IMAGE_REGISTRY}/centos:@OS_VERSION@
+#ARG IMAGE_REGISTRY=registry.centos.org
+FROM centos:latest
 
 @SET_PROXY@
 
-RUN yum -y update && yum install -y \
+RUN yum -y update \
+    && yum install -y 'dnf-command(config-manager)' \
+    && yum config-manager --set-enabled powertools \
+    && yum install -y \
     autoconf \
     automake \
     binutils \
     chrony \
-    coreutils \
+    coreutils-single \
     curl \
     gcc \
     gcc-c++ \
@@ -32,7 +35,8 @@ RUN yum -y update && yum install -y \
     sed \
     tar \
     vim \
-    which
+    which \
+    && yum clean all && rm -rf /var/cache/yum
 
 # This will install the proper packages to build Kata components
 @INSTALL_MUSL@

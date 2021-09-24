@@ -110,6 +110,29 @@ EOF
 EOF
 	fi
 
+    cat >> "${DNF_CONF}" << EOF
+[appstream]
+name=CentOS Linux ${OS_VERSION} - AppStream
+mirrorlist=${CENTOS_UPDATES_MIRROR_LIST}
+gpgcheck=1
+enabled=1
+gpgkey=file://${CONFIG_DIR}/${GPG_KEY_FILE}
+
+[extras]
+name=CentOS Linux ${OS_VERSION} - Extras
+mirrorlist=${CENTOS_EXTRAS_MIRROR_LIST}
+gpgcheck=1
+enabled=1
+gpgkey=file://${CONFIG_DIR}/${GPG_KEY_FILE}
+
+[powertools]
+name=CentOS Linux ${OS_VERSION} - PowerTools
+mirrorlist=${CENTOS_PLUS_MIRROR_LIST}
+gpgcheck=1
+enabled=1
+gpgkey=file://${CONFIG_DIR}/${GPG_KEY_FILE}
+EOF
+
 }
 
 build_rootfs()
@@ -294,6 +317,8 @@ ENV PATH=\$PATH:/usr/local/musl/bin
 	fi
 
 	readonly install_rust="
+ARG RUSTUP_DIST_SERVER=https://mirrors.ustc.edu.cn/rust-static
+ARG RUSTUP_UPDATE_ROOT=https://mirrors.ustc.edu.cn/rust-static/rustup
 RUN curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSLf --output /tmp/rust-init; \
     chmod a+x /tmp/rust-init; \
 	export http_proxy=${http_proxy:-}; \
@@ -337,12 +362,14 @@ RUN ln -sf /usr/bin/g++ /bin/musl-g++
 
 get_package_version_from_kata_yaml()
 {
+    #info "get_package_version_from_kata_yaml"
     local yq_path="$1"
     local yq_version
     local yq_args
 
 	typeset -r yq=$(command -v yq || command -v "${GOPATH}/bin/yq" || echo "${GOPATH}/bin/yq")
 	if [ ! -f "$yq" ]; then
+        #info "======> instll yq"
 		source "$yq_file"
 	fi
 
