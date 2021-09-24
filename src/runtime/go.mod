@@ -15,6 +15,7 @@ require (
 	github.com/containerd/typeurl v1.0.2
 	github.com/containernetworking/plugins v0.9.1
 	github.com/cri-o/cri-o v1.0.0-rc2.0.20170928185954-3394b3b2d6af
+	github.com/docker/go-events v0.0.0-20190806004212-e31b211e4f1c // indirect
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/go-ini/ini v1.28.2
 	github.com/go-openapi/errors v0.18.0
@@ -27,6 +28,7 @@ require (
 	github.com/intel-go/cpuid v0.0.0-20210602155658-5747e5cec0d9
 	github.com/kata-containers/govmm v0.0.0-20210909155007-1b60b536f3c7
 	github.com/mdlayher/vsock v0.0.0-20191108225356-d9c65923cb8f
+	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/opencontainers/runc v1.0.1
 	github.com/opencontainers/runtime-spec v1.0.3-0.20210326190908-1c3f411f0417
 	github.com/opencontainers/selinux v1.8.2
