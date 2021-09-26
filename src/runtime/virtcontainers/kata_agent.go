@@ -1250,6 +1250,9 @@ func (k *kataAgent) rollbackFailingContainerCreation(ctx context.Context, c *Con
 }
 
 func (k *kataAgent) buildContainerRootfs(ctx context.Context, sandbox *Sandbox, c *Container, rootPathParent string) (*grpc.Storage, error) {
+	if c.rootFs.Target == "" {
+		return nil, nil
+	}
 	if c.state.Fstype != "" && c.state.BlockDeviceID != "" {
 		// The rootfs storage volume represents the container rootfs
 		// mount point inside the guest.

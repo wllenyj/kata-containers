@@ -234,6 +234,9 @@ func loadRuntimeConfig(s *service, r *taskAPI.CreateTaskRequest, anno map[string
 }
 
 func checkAndMount(s *service, r *taskAPI.CreateTaskRequest) (bool, error) {
+	if len(r.Rootfs) == 0 {
+		return false, nil
+	}
 	if len(r.Rootfs) == 1 {
 		m := r.Rootfs[0]
 
