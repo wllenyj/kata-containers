@@ -10,6 +10,7 @@ import (
 	"io"
 	"syscall"
 
+	"github.com/containerd/containerd/runtime/v2/task"
 	"github.com/kata-containers/kata-containers/src/runtime/virtcontainers/device/api"
 	"github.com/kata-containers/kata-containers/src/runtime/virtcontainers/device/config"
 	pbTypes "github.com/kata-containers/kata-containers/src/runtime/virtcontainers/pkg/agent/protocols"
@@ -76,6 +77,7 @@ type VCSandbox interface {
 	UpdateRuntimeMetrics() error
 	GetAgentMetrics(ctx context.Context) (string, error)
 	GetAgentURL() (string, error)
+	task.ImageService
 }
 
 // VCContainer is the Container interface

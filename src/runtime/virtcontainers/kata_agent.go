@@ -18,6 +18,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/containerd/containerd/runtime/v2/task"
 	"github.com/kata-containers/kata-containers/src/runtime/pkg/katautils/katatrace"
 	"github.com/kata-containers/kata-containers/src/runtime/virtcontainers/device/api"
 	"github.com/kata-containers/kata-containers/src/runtime/virtcontainers/device/config"
@@ -2261,4 +2262,8 @@ func (k *kataAgent) getAgentMetrics(ctx context.Context, req *grpc.GetMetricsReq
 	}
 
 	return resp.(*grpc.Metrics), nil
+}
+
+func (k *kataAgent) PullImage(ctx context.Context, req *task.PullImageRequest) (*task.PullImageResponse, error) {
+	return k.client.ImageServiceClient.PullImage(ctx, req)
 }

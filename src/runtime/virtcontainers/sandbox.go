@@ -20,6 +20,7 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/containerd/containerd/runtime/v2/task"
 	"github.com/containernetworking/plugins/pkg/ns"
 	specs "github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/pkg/errors"
@@ -2313,4 +2314,8 @@ func (s *Sandbox) fetchContainers(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (s *Sandbox) PullImage(ctx context.Context, req *task.PullImageRequest) (*task.PullImageResponse, error) {
+	return s.agent.PullImage(ctx, req)
 }

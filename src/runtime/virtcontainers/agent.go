@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/containerd/containerd/runtime/v2/task"
 	persistapi "github.com/kata-containers/kata-containers/src/runtime/virtcontainers/persist/api"
 	pbTypes "github.com/kata-containers/kata-containers/src/runtime/virtcontainers/pkg/agent/protocols"
 	"github.com/kata-containers/kata-containers/src/runtime/virtcontainers/pkg/agent/protocols/grpc"
@@ -190,4 +191,6 @@ type agent interface {
 
 	// getAgentMetrics get metrics of agent and guest through agent
 	getAgentMetrics(context.Context, *grpc.GetMetricsRequest) (*grpc.Metrics, error)
+
+	task.ImageService
 }

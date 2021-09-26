@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/containerd/containerd/runtime/v2/task"
 	persistapi "github.com/kata-containers/kata-containers/src/runtime/virtcontainers/persist/api"
 	pbTypes "github.com/kata-containers/kata-containers/src/runtime/virtcontainers/pkg/agent/protocols"
 	"github.com/kata-containers/kata-containers/src/runtime/virtcontainers/pkg/agent/protocols/grpc"
@@ -240,5 +241,8 @@ func (n *mockAgent) getOOMEvent(ctx context.Context) (string, error) {
 }
 
 func (n *mockAgent) getAgentMetrics(ctx context.Context, req *grpc.GetMetricsRequest) (*grpc.Metrics, error) {
+	return nil, nil
+}
+func (k *mockAgent) PullImage(ctx context.Context, req *task.PullImageRequest) (*task.PullImageResponse, error) {
 	return nil, nil
 }

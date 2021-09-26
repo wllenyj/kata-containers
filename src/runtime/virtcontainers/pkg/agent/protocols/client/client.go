@@ -27,6 +27,7 @@ import (
 	"google.golang.org/grpc/status"
 	grpcStatus "google.golang.org/grpc/status"
 
+	"github.com/containerd/containerd/runtime/v2/task"
 	"github.com/containerd/ttrpc"
 	agentgrpc "github.com/kata-containers/kata-containers/src/runtime/virtcontainers/pkg/agent/protocols/grpc"
 )
@@ -53,6 +54,7 @@ var agentClientLog = logrus.WithFields(agentClientFields)
 type AgentClient struct {
 	AgentServiceClient agentgrpc.AgentServiceService
 	HealthClient       agentgrpc.HealthService
+	ImageServiceClient task.ImageService
 	conn               *ttrpc.Client
 }
 
@@ -90,6 +92,7 @@ func NewAgentClient(ctx context.Context, sock string, timeout uint32) (*AgentCli
 	return &AgentClient{
 		AgentServiceClient: agentgrpc.NewAgentServiceClient(client),
 		HealthClient:       agentgrpc.NewHealthClient(client),
+		ImageServiceClient: task.NewImageClient(client),
 		conn:               client,
 	}, nil
 }
