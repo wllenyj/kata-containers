@@ -76,6 +76,8 @@ pub struct AgentConfig {
     pub tracing: bool,
     pub endpoints: AgentEndpoints,
     pub supports_seccomp: bool,
+    pub aa_kbc_params: String,
+    pub confidential_setup_complete: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -91,6 +93,7 @@ pub struct AgentConfigBuilder {
     pub unified_cgroup_hierarchy: Option<bool>,
     pub tracing: Option<bool>,
     pub endpoints: Option<EndpointsConfig>,
+    pub aa_kbc_params: Option<String>,
 }
 
 macro_rules! config_override {
@@ -152,6 +155,8 @@ impl Default for AgentConfig {
             tracing: false,
             endpoints: Default::default(),
             supports_seccomp: rpc::have_seccomp(),
+            aa_kbc_params: String::from(""),
+            confidential_setup_complete: false,
         }
     }
 }
@@ -180,6 +185,7 @@ impl FromStr for AgentConfig {
         config_override!(agent_config_builder, agent_config, server_addr);
         config_override!(agent_config_builder, agent_config, unified_cgroup_hierarchy);
         config_override!(agent_config_builder, agent_config, tracing);
+        config_override!(agent_config_builder, agent_config, aa_kbc_params);
 
         // Populate the allowed endpoints hash set, if we got any from the config file.
         if let Some(endpoints) = agent_config_builder.endpoints {

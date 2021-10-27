@@ -5,6 +5,7 @@
 
 use std::env;
 use std::fs;
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus};
 use std::sync::Arc;
@@ -19,6 +20,7 @@ use ttrpc::{self, error::get_rpc_status as ttrpc_error};
 
 use crate::rpc::{verify_cid, CONTAINER_BASE};
 use crate::sandbox::Sandbox;
+use crate::AGENT_CONFIG;
 
 use oci_distribution::client::ImageData;
 use oci_distribution::manifest::{OciDescriptor, OciManifest};
@@ -38,7 +40,11 @@ use std::io::{Read, Write};
 const SKOPEO_PATH: &str = "/usr/bin/skopeo";
 const UMOCI_PATH: &str = "/usr/local/bin/umoci";
 const IMAGE_OCI: &str = "image_oci";
-const KEYPROVIDER_PATH: &str = "/etc/ocicrypt_keyprovider.json";
+const KEYPROVIDER_PATH: &str = "/etc/containerd/ocicrypt/ocicrypt_keyprovider.conf";
+const IMAGE_OCI: &str = "image_oci:latest";
+const AA_PATH: &str = "/usr/local/bin/attestation-agent";
+const AA_PORT: &str = "127.0.0.1:50000";
+const OCICRYPT_CONFIG_PATH: &str = "/tmp/ocicrypt_config.json";
 
 // Convenience macro to obtain the scope logger
 macro_rules! sl {
@@ -248,7 +254,12 @@ impl ImageService {
         Ok(())
     }
 
-    fn pull_image_from_registry(image: &str, cid: &str, source_creds: &Option<&str>) -> Result<()> {
+    fn pull_image_from_registry(
+        image: &str,
+        cid: &str,
+        source_creds: &Option<&str>,
+        aa_kbc_params: &String,
+    ) -> Result<()> {
         let source_image = format!("{}{}", "docker://", image);
 
         let mut manifest_path = PathBuf::from("/tmp");
@@ -275,6 +286,15 @@ impl ImageService {
 
         if let Some(source_creds) = source_creds {
             pull_command.arg("--src-creds").arg(source_creds);
+        }
+
+        if aa_kbc_params != "" {
+            // Skopeo will copy an unencrypted image even if the decryption key argument is provided.
+            // Thus, this does not guarantee that the image was encrypted.
+            pull_command
+                .arg("--decryption-key")
+                .arg(format!("provider:attestation-agent:{}", aa_kbc_params))
+                .env("OCICRYPT_KEYPROVIDER_CONFIG", KEYPROVIDER_PATH);
         }
 
         let status: ExitStatus = pull_command.status()?;
@@ -325,12 +345,45 @@ impl ImageService {
         Ok(())
     }
 
+    // If we fail to start the AA, Skopeo/ocicrypt won't be able to unwrap keys
+    // and container decryption will fail.
+    //fn init_attestation_agent() {
+    //    let config_path = OCICRYPT_CONFIG_PATH;
+
+    //    // The image will need to be encrypted using a keyprovider
+    //    // that has the same name (at least according to the config).
+    //    let ocicrypt_config = serde_json::json!({
+    //        "key-providers": {
+    //            "attestation-agent":{
+    //                "grpc":AA_PORT
+    //            }
+    //        }
+    //    });
+
+    //    let mut config_file = fs::File::create(config_path).unwrap();
+    //    config_file
+    //        .write_all(ocicrypt_config.to_string().as_bytes())
+    //        .unwrap();
+
+    //    // The Attestation Agent will run for the duration of the guest.
+    //    Command::new(AA_PATH)
+    //        .arg("--grpc_sock")
+    //        .arg(AA_PORT)
+    //        .spawn()
+    //        .unwrap();
+
+    //}
+
     async fn pull_image(&self, req: &image::PullImageRequest) -> Result<String> {
         env::set_var("OCICRYPT_KEYPROVIDER_CONFIG", KEYPROVIDER_PATH);
 
         let image = req.get_image();
         let mut cid = req.get_container_id();
         let use_skopeo = req.get_use_skopeo();
+
+        let agent_config = AGENT_CONFIG.read().await;
+        let aa_kbc_params = &agent_config.aa_kbc_params;
+        let aa_started = agent_config.confidential_setup_complete;
 
         if cid.is_empty() {
             let v: Vec<&str> = image.rsplit('/').collect();
@@ -343,10 +396,16 @@ impl ImageService {
             verify_cid(cid)?;
         }
 
+        //if aa_kbc_params != "" && !aa_started {
+        //Self::init_attestation_agent();
+        //let mut agent_config = AGENT_CONFIG.write().await;
+        //agent_config.confidential_setup_complete = true;
+        //}
+
         let source_creds = (!req.get_source_creds().is_empty()).then(|| req.get_source_creds());
 
         if use_skopeo {
-            Self::pull_image_from_registry(image, cid, &source_creds)?;
+            Self::pull_image_from_registry(image, cid, &source_creds, aa_kbc_params)?;
         } else {
             let image = image.to_string();
             let cid = cid.to_string();
