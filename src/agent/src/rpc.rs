@@ -79,6 +79,7 @@ use std::path::PathBuf;
 
 pub const CONTAINER_BASE: &str = "/run/kata-containers";
 const MODPROBE_PATH: &str = "/sbin/modprobe";
+const ANNO_K8S_IMAGE_NAME: &str = "io.kubernetes.cri.image-name";
 
 // Convenience macro to obtain the scope logger
 macro_rules! sl {
@@ -124,6 +125,36 @@ pub fn verify_cid(id: &str) -> Result<()> {
     }
 }
 
+// merge oci process
+fn merge_process(ori: &mut oci::Process, image: &oci::Process) {
+    if ori.args.len() == 0 {
+        if image.args.len() != 0 {
+            ori.args.append(&mut image.args.clone());
+        }
+    }
+    if ori.cwd.len() == 0 {
+        ori.cwd = image.cwd.clone();
+    }
+    ori.env.append(&mut image.env.clone());
+}
+
+// merge oci spec
+fn merge_oci(image_bundle: &str, ori: &mut oci::Spec, image: &oci::Spec) {
+    if let Some(root) = ori.root.as_mut() {
+        if let Some(ir) = image.root.as_ref() {
+            let mut rp = PathBuf::from(CONTAINER_BASE);
+            rp.push(image_bundle);
+            rp.push(ir.path.clone());
+            root.path = String::from(rp.to_str().unwrap());
+        }
+    }
+    if let Some(proc) = ori.process.as_mut() {
+        if let Some(image_proc) = image.process.as_ref() {
+            merge_process(proc, image_proc);
+        }
+    }
+}
+
 impl AgentService {
     #[instrument]
     async fn do_create_container(
@@ -149,6 +180,16 @@ impl AgentService {
         };
 
         info!(sl!(), "receive createcontainer, spec: {:?}", &oci);
+
+        // Merge OCI Spec for Image
+        if let Some(image_name) = oci.annotations.get(&ANNO_K8S_IMAGE_NAME.to_string()) {
+            if let Some(cid) = self.sandbox.clone().lock().await.images.get(image_name) {
+                let config_path = format!("{}/{}/config.json", CONTAINER_BASE, cid);
+                debug!(sl!(), "merge image bundle path: {}", config_path);
+                let image_oci = oci::Spec::load(&config_path).context("load image bundle")?;
+                merge_oci(&cid, &mut oci, &image_oci);
+            }
+        }
 
         // Some devices need some extra processing (the ones invoked with
         // --device for instance), and that's what this call is doing. It
