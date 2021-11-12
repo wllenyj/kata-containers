@@ -3,23 +3,42 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
+use std::env;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus};
 use std::sync::Arc;
 
 use anyhow::{anyhow, ensure, Result};
 use async_trait::async_trait;
 use protocols::image;
+use std::convert::TryFrom;
+use std::fs::File;
 use tokio::sync::Mutex;
 use ttrpc::{self, error::get_rpc_status as ttrpc_error};
 
 use crate::rpc::{verify_cid, CONTAINER_BASE};
 use crate::sandbox::Sandbox;
 
+use oci_distribution::client::ImageData;
+use oci_distribution::manifest::{OciDescriptor, OciManifest};
+use oci_distribution::{manifest, secrets::RegistryAuth, Client, Reference};
+use ocicrypt_rs::config::CryptoConfig;
+use ocicrypt_rs::encryption::decrypt_layer;
+use ocicrypt_rs::helpers::create_decrypt_config;
+use ocicrypt_rs::spec::{
+    MEDIA_TYPE_LAYEE_GZIP_ENC, MEDIA_TYPE_LAYER_ENC, MEDIA_TYPE_LAYER_NON_DISTRIBUTABLE_ENC,
+    MEDIA_TYPE_LAYER_NON_DISTRIBUTABLE_GZIP_ENC,
+};
+use serde::Serialize;
+use sha2::{Digest, Sha256};
+use std::collections::HashMap;
+use std::io::{Read, Write};
+
 const SKOPEO_PATH: &str = "/usr/bin/skopeo";
 const UMOCI_PATH: &str = "/usr/local/bin/umoci";
 const IMAGE_OCI: &str = "image_oci";
+const KEYPROVIDER_PATH: &str = "/etc/ocicrypt_keyprovider.json";
 
 // Convenience macro to obtain the scope logger
 macro_rules! sl {
@@ -32,6 +51,13 @@ pub struct ImageService {
     sandbox: Arc<Mutex<Sandbox>>,
 }
 
+#[derive(Serialize, Debug, Default, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct IndexDescriptor {
+    pub schema_version: u8,
+    pub manifests: Vec<OciDescriptor>,
+}
+
 impl ImageService {
     pub fn new(sandbox: Arc<Mutex<Sandbox>>) -> Self {
         Self { sandbox }
@@ -42,6 +68,184 @@ impl ImageService {
         oci_path.push(cid);
         oci_path.push(IMAGE_OCI);
         oci_path
+    }
+
+    #[tokio::main(flavor = "current_thread")]
+    async fn download_image(
+        image: &str,
+        auth: &RegistryAuth,
+    ) -> anyhow::Result<(OciManifest, String, ImageData)> {
+        let reference = Reference::try_from(image)?;
+        let mut client = Client::default();
+        let (image_manifest, _image_digest, image_config) =
+            client.pull_manifest_and_config(&reference, auth).await?;
+
+        let mut last_error = None;
+        let mut image_data = ImageData {
+            layers: Vec::with_capacity(0),
+            digest: None,
+        };
+
+        for i in 1..2 {
+            match client
+                .pull(
+                    &reference,
+                    auth,
+                    vec![
+                        manifest::IMAGE_DOCKER_LAYER_GZIP_MEDIA_TYPE,
+                        manifest::IMAGE_LAYER_GZIP_MEDIA_TYPE,
+                        MEDIA_TYPE_LAYEE_GZIP_ENC,
+                        MEDIA_TYPE_LAYER_ENC,
+                        MEDIA_TYPE_LAYER_NON_DISTRIBUTABLE_ENC,
+                        MEDIA_TYPE_LAYER_NON_DISTRIBUTABLE_GZIP_ENC,
+                    ],
+                )
+                .await
+            {
+                Ok(data) => {
+                    image_data = data;
+                    break;
+                }
+                Err(e) => {
+                    println!(
+                        "Got error on pull call attempt {}. Will retry in 1s: {:?}",
+                        i, e
+                    );
+                    last_error.replace(e);
+                    tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+                }
+            }
+        }
+
+        Ok((image_manifest, image_config, image_data))
+    }
+
+    fn pull_image_with_oci_distribution(
+        image: &str,
+        cid: &str,
+        source_creds: &Option<String>,
+    ) -> Result<()> {
+        let oci_path = Self::build_oci_path(cid);
+        fs::create_dir_all(&oci_path)?;
+
+        info!(
+            sl!(),
+            "Attempting to pull image with rust crate {}...", image
+        );
+
+        let mut auth = RegistryAuth::Anonymous;
+        if let Some(source_creds) = source_creds {
+            let auth_info: Vec<&str> = source_creds.split(':').collect();
+            if auth_info.len() == 2 {
+                auth = RegistryAuth::Basic(auth_info[0].to_string(), auth_info[1].to_string());
+            } else {
+                warn!(sl!(), "invalid source_creds format \n");
+            }
+        }
+
+        let (mut image_manifest, image_config, image_data) = Self::download_image(image, &auth)?;
+
+        // Prepare OCI layout storage for umoci
+        image_manifest.config.media_type = manifest::IMAGE_CONFIG_MEDIA_TYPE.to_string();
+        let oci_blob_path = format!("{}/blobs/sha256/", oci_path.to_string_lossy());
+        fs::create_dir_all(Path::new(&oci_blob_path))?;
+
+        if let Some(config_name) = &image_manifest.config.digest.strip_prefix("sha256:") {
+            let mut out_file = File::create(format!("{}/{}", oci_blob_path, config_name))?;
+            out_file.write_all(image_config.as_bytes())?;
+        }
+
+        let mut cc = CryptoConfig::default();
+        // aa_kbc_params will get from PR: https://github.com/kata-containers/kata-containers/pull/2911
+        let aa_kbc_params = "kbc:ip:port".to_string();
+        if aa_kbc_params != "" {
+            let decrypt_config = format!("provider:attestation-agent:{}", aa_kbc_params);
+            cc = create_decrypt_config(vec![decrypt_config], vec![])?;
+        }
+
+        // Covert docker layer media type to OCI type
+        for layer_desc in image_manifest.layers.iter_mut() {
+            if layer_desc.media_type == manifest::IMAGE_DOCKER_LAYER_GZIP_MEDIA_TYPE {
+                layer_desc.media_type = manifest::IMAGE_LAYER_GZIP_MEDIA_TYPE.to_string();
+            }
+        }
+
+        for layer in image_data.layers.iter() {
+            let layer_digest = layer.clone().sha256_digest();
+
+            if layer.media_type == MEDIA_TYPE_LAYEE_GZIP_ENC
+                || layer.media_type == MEDIA_TYPE_LAYER_ENC
+            {
+                if cc.decrypt_config.is_none() {
+                    break;
+                }
+
+                for layer_desc in image_manifest.layers.iter_mut() {
+                    if layer_desc.digest == layer_digest {
+                        let (layer_decryptor, _dec_digest) = decrypt_layer(
+                            &cc.decrypt_config.as_ref().unwrap(),
+                            layer.data.as_slice(),
+                            layer_desc,
+                            false,
+                        )?;
+                        let mut plaintxt_data: Vec<u8> = Vec::new();
+                        let mut decryptor = layer_decryptor.unwrap();
+
+                        decryptor.read_to_end(&mut plaintxt_data)?;
+                        let layer_name = format!("{:x}", Sha256::digest(&plaintxt_data));
+                        let mut out_file =
+                            File::create(format!("{}/{}", oci_blob_path, layer_name))?;
+                        info!(sl!(), "Saving image file {}...", layer_name);
+                        out_file.write_all(&plaintxt_data)?;
+                        layer_desc.media_type = manifest::IMAGE_LAYER_GZIP_MEDIA_TYPE.to_string();
+
+                        layer_desc.digest = format!("sha256:{}", layer_name);
+                    }
+                }
+            } else if let Some(layer_name) = layer_digest.strip_prefix("sha256:") {
+                let mut out_file = File::create(format!("{}/{}", oci_blob_path, layer_name))?;
+                info!(sl!(), "Saving image file {}...", layer_name);
+                out_file.write_all(&layer.data)?;
+            }
+        }
+        let manifest_json = serde_json::to_string(&image_manifest)?;
+
+        let image_manifest_file = format!(
+            "{}{:x}",
+            oci_blob_path,
+            Sha256::digest(manifest_json.as_bytes())
+        );
+
+        let mut out_file = File::create(&image_manifest_file)?;
+        out_file.write_all(manifest_json.as_bytes())?;
+
+        let mut annotations = HashMap::new();
+        annotations.insert(
+            "org.opencontainers.image.ref.name".to_string(),
+            "latest".to_string(),
+        );
+
+        let manifest_descriptor = OciDescriptor {
+            media_type: "application/vnd.oci.image.manifest.v1+json".to_string(),
+            digest: format!("sha256:{:x}", Sha256::digest(manifest_json.as_bytes())),
+            size: manifest_json.len() as i64,
+            annotations: Some(annotations),
+            ..Default::default()
+        };
+
+        let index_descriptor = IndexDescriptor {
+            schema_version: image_manifest.schema_version,
+            manifests: vec![manifest_descriptor],
+        };
+
+        let mut out_file = File::create(format!("{}/index.json", oci_path.to_string_lossy()))?;
+        out_file.write_all(serde_json::to_string(&index_descriptor).unwrap().as_bytes())?;
+
+        let mut out_file = File::create(format!("{}/oci-layout", oci_path.to_string_lossy()))?;
+        let oci_layout = r#"{"imageLayoutVersion": "1.0.0"}"#;
+        out_file.write_all(oci_layout.as_bytes())?;
+
+        Ok(())
     }
 
     fn pull_image_from_registry(image: &str, cid: &str, source_creds: &Option<&str>) -> Result<()> {
@@ -122,8 +326,11 @@ impl ImageService {
     }
 
     async fn pull_image(&self, req: &image::PullImageRequest) -> Result<String> {
+        env::set_var("OCICRYPT_KEYPROVIDER_CONFIG", KEYPROVIDER_PATH);
+
         let image = req.get_image();
         let mut cid = req.get_container_id();
+        let use_skopeo = req.get_use_skopeo();
 
         if cid.is_empty() {
             let v: Vec<&str> = image.rsplit('/').collect();
@@ -138,7 +345,21 @@ impl ImageService {
 
         let source_creds = (!req.get_source_creds().is_empty()).then(|| req.get_source_creds());
 
-        Self::pull_image_from_registry(image, cid, &source_creds)?;
+        if use_skopeo {
+            Self::pull_image_from_registry(image, cid, &source_creds)?;
+        } else {
+            let image = image.to_string();
+            let cid = cid.to_string();
+            let source_creds =
+                (!req.get_source_creds().is_empty()).then(|| req.get_source_creds().to_string());
+            tokio::task::spawn_blocking(move || {
+                Self::pull_image_with_oci_distribution(&image, &cid, &source_creds)
+                    .map_err(|err| println!("{:?}", err))
+                    .ok();
+            })
+            .await?;
+        }
+
         Self::unpack_image(cid)?;
 
         let mut sandbox = self.sandbox.lock().await;
