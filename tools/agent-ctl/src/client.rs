@@ -2070,10 +2070,18 @@ fn agent_cmd_pull_image(
     let image = utils::get_option("image", options, args);
     let cid = utils::get_option("cid", options, args);
     let source_creds = utils::get_option("source_creds", options, args);
+    let use_skopeo = utils::get_option("use_skopeo", options, args);
 
     req.set_image(image);
     req.set_container_id(cid);
     req.set_source_creds(source_creds);
+    if use_skopeo != "" {
+        let use_skopeo = use_skopeo
+            .parse::<bool>()
+            .map_err(|e| anyhow!(e).context("invalid skopeo bool"))?;
+
+        req.set_use_skopeo(use_skopeo);
+    }
 
     debug!(sl!(), "sending request"; "request" => format!("{:?}", req));
 

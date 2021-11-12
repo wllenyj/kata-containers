@@ -22,6 +22,8 @@ message PullImageRequest {
     string container_id = 2;
     // Use USERNAME[:PASSWORD] for accessing the registry
     string source_creds = 3;
+    // Use skopeo or rust crate to download container image
+    bool use_skopeo = 4;
 }
 
 message PullImageResponse {
