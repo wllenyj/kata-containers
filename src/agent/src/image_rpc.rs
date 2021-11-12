@@ -19,7 +19,7 @@ use crate::sandbox::Sandbox;
 
 const SKOPEO_PATH: &str = "/usr/bin/skopeo";
 const UMOCI_PATH: &str = "/usr/local/bin/umoci";
-const IMAGE_OCI: &str = "image_oci:latest";
+const IMAGE_OCI: &str = "image_oci";
 
 // Convenience macro to obtain the scope logger
 macro_rules! sl {
@@ -54,7 +54,7 @@ impl ImageService {
 
         // Define the target transport and path for the OCI image, without signature
         let oci_path = Self::build_oci_path(cid);
-        let target_path_oci = format!("oci://{}", oci_path.to_string_lossy());
+        let target_path_oci = format!("oci://{}:latest", oci_path.to_string_lossy());
 
         fs::create_dir_all(&manifest_path)?;
         fs::create_dir_all(&oci_path)?;
