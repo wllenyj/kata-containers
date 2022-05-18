@@ -817,9 +817,6 @@ impl Vm {
 
 #[cfg(test)]
 pub mod tests {
-    use std::os::unix::io::AsRawFd;
-
-    use kvm_ioctls::Kvm;
     use kvm_ioctls::VcpuExit;
     use linux_loader::cmdline::Cmdline;
     use vm_memory::GuestMemory;
@@ -979,10 +976,9 @@ pub mod tests {
             0xf4,  /* hlt */
         ];
         let load_addr = GuestAddress(0x1000);
-        let kvm = Kvm::new().unwrap();
         let instance_info = Arc::new(RwLock::new(InstanceInfo::default()));
         let epoll_manager = EpollManager::default();
-        let mut vm = Vm::new(Some(kvm.as_raw_fd()), instance_info, epoll_manager).unwrap();
+        let mut vm = Vm::new(None, instance_info, epoll_manager).unwrap();
 
         let vcpu_count = 1;
         let vm_config = VmConfigInfo {
