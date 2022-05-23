@@ -1086,7 +1086,8 @@ mod tests {
 
         vm.vcpu_manager()
             .unwrap()
-            .set_reset_event_fd(EventFd::new(libc::EFD_NONBLOCK).unwrap());
+            .set_reset_event_fd(EventFd::new(libc::EFD_NONBLOCK).unwrap())
+            .unwrap();
 
         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
         {
@@ -1148,7 +1149,7 @@ mod tests {
 
         let reset_event_fd = EventFd::new(libc::EFD_NONBLOCK).unwrap();
         let reset_event_fd_raw = reset_event_fd.as_raw_fd();
-        vcpu_manager.set_reset_event_fd(reset_event_fd);
+        vcpu_manager.set_reset_event_fd(reset_event_fd).unwrap();
 
         // test the reset_event_fd
         assert_eq!(

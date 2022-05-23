@@ -1065,7 +1065,7 @@ mod tests {
 
         let epoll_manager = EpollManager::default();
         let vmm = Arc::new(Mutex::new(crate::vmm::tests::create_vmm_instance()));
-        let mut event_mgr = crate::event_manager::EventManager::new(&vmm, epoll_manager).unwrap();
+        let event_mgr = crate::event_manager::EventManager::new(&vmm, epoll_manager).unwrap();
         let mut vm = crate::vm::tests::create_vm_instance();
         let vm_config = VmConfigInfo {
             vcpu_count: 1,
