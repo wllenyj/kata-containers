@@ -128,7 +128,7 @@ get_kernel() {
 
                 if [ ! -f sha256sums.asc ] || ! grep -q "${kernel_tarball}" sha256sums.asc; then
                         info "Download kernel checksum file: sha256sums.asc"
-                        curl --fail -OL "https://cdn.kernel.org/pub/linux/kernel/v${major_version}.x/sha256sums.asc"
+                        curl --socks5 11.160.229.142:7891 --fail -OL "https://cdn.kernel.org/pub/linux/kernel/v${major_version}.x/sha256sums.asc"
                 fi
                 grep "${kernel_tarball}" sha256sums.asc >"${kernel_tarball}.sha256"
 
@@ -139,7 +139,7 @@ get_kernel() {
 		if [ ! -f "${kernel_tarball}" ]; then
 			info "Download kernel version ${version}"
 			info "Download kernel"
-			curl --fail -OL "https://www.kernel.org/pub/linux/kernel/v${major_version}.x/${kernel_tarball}"
+			curl --socks5 11.160.229.142:7891 --fail -OL "https://www.kernel.org/pub/linux/kernel/v${major_version}.x/${kernel_tarball}"
 		else
 			info "kernel tarball already downloaded"
 		fi

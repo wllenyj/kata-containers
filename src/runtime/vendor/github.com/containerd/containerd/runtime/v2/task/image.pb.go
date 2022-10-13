@@ -8,7 +8,6 @@ import (
 	fmt "fmt"
 	github_com_containerd_ttrpc "github.com/containerd/ttrpc"
 	proto "github.com/gogo/protobuf/proto"
-	github_com_gogo_protobuf_sortkeys "github.com/gogo/protobuf/sortkeys"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -27,113 +26,18 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// ImageSpec is an internal representation of an image.
-type ImageSpec struct {
-	// Container's Image field (e.g. imageID or imageDigest).
-	Image string `protobuf:"bytes,1,opt,name=image,proto3" json:"image,omitempty"`
-	// Unstructured key-value map holding arbitrary metadata.
-	// ImageSpec Annotations can be used to help the runtime target specific
-	// images in multi-arch images.
-	Annotations          map[string]string `protobuf:"bytes,2,rep,name=annotations,proto3" json:"annotations,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
-	XXX_unrecognized     []byte            `json:"-"`
-	XXX_sizecache        int32             `json:"-"`
-}
-
-func (m *ImageSpec) Reset()      { *m = ImageSpec{} }
-func (*ImageSpec) ProtoMessage() {}
-func (*ImageSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_9624c68e2b547544, []int{0}
-}
-func (m *ImageSpec) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *ImageSpec) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ImageSpec.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *ImageSpec) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ImageSpec.Merge(m, src)
-}
-func (m *ImageSpec) XXX_Size() int {
-	return m.Size()
-}
-func (m *ImageSpec) XXX_DiscardUnknown() {
-	xxx_messageInfo_ImageSpec.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ImageSpec proto.InternalMessageInfo
-
-// AuthConfig contains authorization information for connecting to a registry.
-type AuthConfig struct {
-	Username      string `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
-	Password      string `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
-	Auth          string `protobuf:"bytes,3,opt,name=auth,proto3" json:"auth,omitempty"`
-	ServerAddress string `protobuf:"bytes,4,opt,name=server_address,json=serverAddress,proto3" json:"server_address,omitempty"`
-	// IdentityToken is used to authenticate the user and get
-	// an access token for the registry.
-	IdentityToken string `protobuf:"bytes,5,opt,name=identity_token,json=identityToken,proto3" json:"identity_token,omitempty"`
-	// RegistryToken is a bearer token to be sent to a registry
-	RegistryToken        string   `protobuf:"bytes,6,opt,name=registry_token,json=registryToken,proto3" json:"registry_token,omitempty"`
+type PullImageRequest struct {
+	// Name of the image.
+	Image                string   `protobuf:"bytes,1,opt,name=image,proto3" json:"image,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *AuthConfig) Reset()      { *m = AuthConfig{} }
-func (*AuthConfig) ProtoMessage() {}
-func (*AuthConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_9624c68e2b547544, []int{1}
-}
-func (m *AuthConfig) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *AuthConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_AuthConfig.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *AuthConfig) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AuthConfig.Merge(m, src)
-}
-func (m *AuthConfig) XXX_Size() int {
-	return m.Size()
-}
-func (m *AuthConfig) XXX_DiscardUnknown() {
-	xxx_messageInfo_AuthConfig.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_AuthConfig proto.InternalMessageInfo
-
-type PullImageRequest struct {
-	// Spec of the image.
-	Image *ImageSpec `protobuf:"bytes,1,opt,name=image,proto3" json:"image,omitempty"`
-	// Authentication configuration for pulling the image.
-	Auth                 *AuthConfig `protobuf:"bytes,2,opt,name=auth,proto3" json:"auth,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
-	XXX_unrecognized     []byte      `json:"-"`
-	XXX_sizecache        int32       `json:"-"`
-}
-
 func (m *PullImageRequest) Reset()      { *m = PullImageRequest{} }
 func (*PullImageRequest) ProtoMessage() {}
 func (*PullImageRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_9624c68e2b547544, []int{2}
+	return fileDescriptor_9624c68e2b547544, []int{0}
 }
 func (m *PullImageRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -174,7 +78,7 @@ type PullImageResponse struct {
 func (m *PullImageResponse) Reset()      { *m = PullImageResponse{} }
 func (*PullImageResponse) ProtoMessage() {}
 func (*PullImageResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_9624c68e2b547544, []int{3}
+	return fileDescriptor_9624c68e2b547544, []int{1}
 }
 func (m *PullImageResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -204,9 +108,6 @@ func (m *PullImageResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_PullImageResponse proto.InternalMessageInfo
 
 func init() {
-	proto.RegisterType((*ImageSpec)(nil), "containerd.task.v2.ImageSpec")
-	proto.RegisterMapType((map[string]string)(nil), "containerd.task.v2.ImageSpec.AnnotationsEntry")
-	proto.RegisterType((*AuthConfig)(nil), "containerd.task.v2.AuthConfig")
 	proto.RegisterType((*PullImageRequest)(nil), "containerd.task.v2.PullImageRequest")
 	proto.RegisterType((*PullImageResponse)(nil), "containerd.task.v2.PullImageResponse")
 }
@@ -214,157 +115,21 @@ func init() {
 func init() { proto.RegisterFile("image.proto", fileDescriptor_9624c68e2b547544) }
 
 var fileDescriptor_9624c68e2b547544 = []byte{
-	// 433 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x93, 0xcf, 0x8b, 0x13, 0x31,
-	0x14, 0xc7, 0x9b, 0x76, 0xbb, 0xd8, 0x57, 0x94, 0x1a, 0x3c, 0x0c, 0x15, 0x87, 0x65, 0x70, 0x61,
-	0x4f, 0xa9, 0xcc, 0x22, 0x88, 0x82, 0x50, 0xc5, 0x83, 0x27, 0x97, 0xea, 0x69, 0x2f, 0x25, 0xdb,
-	0x79, 0x6d, 0x43, 0xdb, 0xa4, 0xe6, 0x47, 0xa5, 0x78, 0xf1, 0x7f, 0xf2, 0x9f, 0xd8, 0x8b, 0xe0,
-	0xd1, 0xa3, 0xdb, 0xbf, 0x44, 0x92, 0x74, 0xa6, 0xc3, 0xba, 0xe8, 0x65, 0xc8, 0xfb, 0xe6, 0xf3,
-	0xbe, 0xef, 0x47, 0x18, 0xe8, 0x8a, 0x15, 0x9f, 0x21, 0x5b, 0x6b, 0x65, 0x15, 0xa5, 0x13, 0x25,
-	0x2d, 0x17, 0x12, 0x75, 0xc1, 0x2c, 0x37, 0x0b, 0xb6, 0xc9, 0xb3, 0xef, 0x04, 0x3a, 0xef, 0x3d,
-	0xf3, 0x71, 0x8d, 0x13, 0xfa, 0x08, 0xda, 0x21, 0x21, 0x21, 0x27, 0xe4, 0xac, 0x33, 0x8a, 0x01,
-	0xbd, 0x80, 0x2e, 0x97, 0x52, 0x59, 0x6e, 0x85, 0x92, 0x26, 0x69, 0x9e, 0xb4, 0xce, 0xba, 0x39,
-	0x63, 0x7f, 0xbb, 0xb1, 0xca, 0x89, 0x0d, 0x0f, 0x09, 0xef, 0xa4, 0xd5, 0xdb, 0x51, 0xdd, 0xa2,
-	0xff, 0x1a, 0x7a, 0xb7, 0x01, 0xda, 0x83, 0xd6, 0x02, 0xb7, 0xfb, 0xca, 0xfe, 0xe8, 0xbb, 0xd9,
-	0xf0, 0xa5, 0xc3, 0xa4, 0x19, 0xbb, 0x09, 0xc1, 0xcb, 0xe6, 0x0b, 0x92, 0xfd, 0x20, 0x00, 0x43,
-	0x67, 0xe7, 0x6f, 0x95, 0x9c, 0x8a, 0x19, 0xed, 0xc3, 0x3d, 0x67, 0x50, 0x4b, 0xbe, 0x2a, 0x3b,
-	0xaf, 0x62, 0x7f, 0xb7, 0xe6, 0xc6, 0x7c, 0x51, 0xba, 0xd8, 0xfb, 0x54, 0x31, 0xa5, 0x70, 0xc4,
-	0x9d, 0x9d, 0x27, 0xad, 0xa0, 0x87, 0x33, 0x3d, 0x85, 0x07, 0x06, 0xf5, 0x06, 0xf5, 0x98, 0x17,
-	0x85, 0x46, 0x63, 0x92, 0xa3, 0x70, 0x7b, 0x3f, 0xaa, 0xc3, 0x28, 0x7a, 0x4c, 0x14, 0x28, 0xad,
-	0xb0, 0xdb, 0xb1, 0x55, 0x0b, 0x94, 0x49, 0x3b, 0x62, 0xa5, 0xfa, 0xc9, 0x8b, 0x1e, 0xd3, 0x38,
-	0x13, 0xc6, 0xea, 0x12, 0x3b, 0x8e, 0x58, 0xa9, 0x06, 0x2c, 0xfb, 0x0a, 0xbd, 0x0b, 0xb7, 0x5c,
-	0x86, 0xf5, 0x8d, 0xf0, 0xb3, 0x43, 0x63, 0xe9, 0x79, 0xfd, 0x2d, 0xba, 0xf9, 0x93, 0x7f, 0xee,
-	0xbb, 0x7c, 0xaa, 0x7c, 0x3f, 0x51, 0x33, 0xe4, 0xa4, 0x77, 0xe5, 0x1c, 0xf6, 0x16, 0x27, 0xce,
-	0x9e, 0xc1, 0xc3, 0x5a, 0x71, 0xb3, 0x56, 0xd2, 0x20, 0x7d, 0x0c, 0x9d, 0xe0, 0x38, 0xd6, 0x38,
-	0x2d, 0x77, 0x2a, 0x22, 0x31, 0xcd, 0x27, 0xd0, 0x0e, 0x34, 0xbd, 0x84, 0x4e, 0x95, 0x4a, 0x9f,
-	0xde, 0x55, 0xed, 0xf6, 0x58, 0xfd, 0xd3, 0xff, 0x50, 0xb1, 0x7e, 0xd6, 0x78, 0xf3, 0xe1, 0xfa,
-	0x26, 0x6d, 0xfc, 0xba, 0x49, 0x1b, 0xdf, 0x76, 0x29, 0xb9, 0xde, 0xa5, 0xe4, 0xe7, 0x2e, 0x25,
-	0xbf, 0x77, 0x29, 0xb9, 0x7c, 0x3e, 0x13, 0x76, 0xee, 0xae, 0xd8, 0x44, 0xad, 0x06, 0x07, 0xb3,
-	0xfa, 0x51, 0x3b, 0x69, 0xc5, 0x0a, 0x07, 0x9b, 0x7c, 0xe0, 0x4b, 0xbc, 0xf2, 0x9f, 0xab, 0xe3,
-	0xf0, 0x17, 0x9c, 0xff, 0x09, 0x00, 0x00, 0xff, 0xff, 0x9a, 0xd5, 0x36, 0x96, 0x14, 0x03, 0x00,
-	0x00,
-}
-
-func (m *ImageSpec) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *ImageSpec) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ImageSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if len(m.Annotations) > 0 {
-		for k := range m.Annotations {
-			v := m.Annotations[k]
-			baseI := i
-			i -= len(v)
-			copy(dAtA[i:], v)
-			i = encodeVarintImage(dAtA, i, uint64(len(v)))
-			i--
-			dAtA[i] = 0x12
-			i -= len(k)
-			copy(dAtA[i:], k)
-			i = encodeVarintImage(dAtA, i, uint64(len(k)))
-			i--
-			dAtA[i] = 0xa
-			i = encodeVarintImage(dAtA, i, uint64(baseI-i))
-			i--
-			dAtA[i] = 0x12
-		}
-	}
-	if len(m.Image) > 0 {
-		i -= len(m.Image)
-		copy(dAtA[i:], m.Image)
-		i = encodeVarintImage(dAtA, i, uint64(len(m.Image)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *AuthConfig) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *AuthConfig) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *AuthConfig) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if len(m.RegistryToken) > 0 {
-		i -= len(m.RegistryToken)
-		copy(dAtA[i:], m.RegistryToken)
-		i = encodeVarintImage(dAtA, i, uint64(len(m.RegistryToken)))
-		i--
-		dAtA[i] = 0x32
-	}
-	if len(m.IdentityToken) > 0 {
-		i -= len(m.IdentityToken)
-		copy(dAtA[i:], m.IdentityToken)
-		i = encodeVarintImage(dAtA, i, uint64(len(m.IdentityToken)))
-		i--
-		dAtA[i] = 0x2a
-	}
-	if len(m.ServerAddress) > 0 {
-		i -= len(m.ServerAddress)
-		copy(dAtA[i:], m.ServerAddress)
-		i = encodeVarintImage(dAtA, i, uint64(len(m.ServerAddress)))
-		i--
-		dAtA[i] = 0x22
-	}
-	if len(m.Auth) > 0 {
-		i -= len(m.Auth)
-		copy(dAtA[i:], m.Auth)
-		i = encodeVarintImage(dAtA, i, uint64(len(m.Auth)))
-		i--
-		dAtA[i] = 0x1a
-	}
-	if len(m.Password) > 0 {
-		i -= len(m.Password)
-		copy(dAtA[i:], m.Password)
-		i = encodeVarintImage(dAtA, i, uint64(len(m.Password)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if len(m.Username) > 0 {
-		i -= len(m.Username)
-		copy(dAtA[i:], m.Username)
-		i = encodeVarintImage(dAtA, i, uint64(len(m.Username)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
+	// 213 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0xce, 0xcc, 0x4d, 0x4c,
+	0x4f, 0xd5, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x12, 0x4a, 0xce, 0xcf, 0x2b, 0x49, 0xcc, 0xcc,
+	0x4b, 0x2d, 0x4a, 0xd1, 0x2b, 0x49, 0x2c, 0xce, 0xd6, 0x2b, 0x33, 0x52, 0xd2, 0xe0, 0x12, 0x08,
+	0x28, 0xcd, 0xc9, 0xf1, 0x04, 0x29, 0x0b, 0x4a, 0x2d, 0x2c, 0x4d, 0x2d, 0x2e, 0x11, 0x12, 0xe1,
+	0x62, 0x05, 0x6b, 0x93, 0x60, 0x54, 0x60, 0xd4, 0xe0, 0x0c, 0x82, 0x70, 0x94, 0x0c, 0xb8, 0x04,
+	0x91, 0x54, 0x16, 0x17, 0xe4, 0xe7, 0x15, 0xa7, 0x0a, 0x49, 0x73, 0x71, 0x82, 0x65, 0xe3, 0x8b,
+	0x52, 0xd3, 0xa0, 0xca, 0x39, 0x32, 0x21, 0x2a, 0xd2, 0x8c, 0x92, 0xb9, 0x58, 0xc1, 0xaa, 0x85,
+	0xa2, 0xb8, 0x38, 0xe1, 0x5a, 0x85, 0x54, 0xf4, 0x30, 0x9d, 0xa1, 0x87, 0xee, 0x06, 0x29, 0x55,
+	0x02, 0xaa, 0x20, 0xf6, 0x2b, 0x31, 0x38, 0xf9, 0x9f, 0x78, 0x28, 0xc7, 0x70, 0xe3, 0xa1, 0x1c,
+	0x43, 0xc3, 0x23, 0x39, 0xc6, 0x13, 0x8f, 0xe4, 0x18, 0x2f, 0x3c, 0x92, 0x63, 0x7c, 0xf0, 0x48,
+	0x8e, 0x31, 0xca, 0x34, 0x3d, 0xb3, 0x24, 0xa3, 0x34, 0x49, 0x2f, 0x39, 0x3f, 0x57, 0x1f, 0x61,
+	0x18, 0x32, 0xb3, 0xa8, 0x34, 0xaf, 0x24, 0x33, 0x37, 0x55, 0xbf, 0xcc, 0x48, 0x1f, 0x64, 0x85,
+	0x35, 0x88, 0x48, 0x62, 0x03, 0x07, 0x96, 0x31, 0x20, 0x00, 0x00, 0xff, 0xff, 0xf1, 0x9d, 0xd6,
+	0xbf, 0x3b, 0x01, 0x00, 0x00,
 }
 
 func (m *PullImageRequest) Marshal() (dAtA []byte, err error) {
@@ -391,27 +156,10 @@ func (m *PullImageRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i -= len(m.XXX_unrecognized)
 		copy(dAtA[i:], m.XXX_unrecognized)
 	}
-	if m.Auth != nil {
-		{
-			size, err := m.Auth.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintImage(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x12
-	}
-	if m.Image != nil {
-		{
-			size, err := m.Image.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintImage(dAtA, i, uint64(size))
-		}
+	if len(m.Image) > 0 {
+		i -= len(m.Image)
+		copy(dAtA[i:], m.Image)
+		i = encodeVarintImage(dAtA, i, uint64(len(m.Image)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -463,7 +211,7 @@ func encodeVarintImage(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
-func (m *ImageSpec) Size() (n int) {
+func (m *PullImageRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -471,70 +219,6 @@ func (m *ImageSpec) Size() (n int) {
 	_ = l
 	l = len(m.Image)
 	if l > 0 {
-		n += 1 + l + sovImage(uint64(l))
-	}
-	if len(m.Annotations) > 0 {
-		for k, v := range m.Annotations {
-			_ = k
-			_ = v
-			mapEntrySize := 1 + len(k) + sovImage(uint64(len(k))) + 1 + len(v) + sovImage(uint64(len(v)))
-			n += mapEntrySize + 1 + sovImage(uint64(mapEntrySize))
-		}
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
-	return n
-}
-
-func (m *AuthConfig) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.Username)
-	if l > 0 {
-		n += 1 + l + sovImage(uint64(l))
-	}
-	l = len(m.Password)
-	if l > 0 {
-		n += 1 + l + sovImage(uint64(l))
-	}
-	l = len(m.Auth)
-	if l > 0 {
-		n += 1 + l + sovImage(uint64(l))
-	}
-	l = len(m.ServerAddress)
-	if l > 0 {
-		n += 1 + l + sovImage(uint64(l))
-	}
-	l = len(m.IdentityToken)
-	if l > 0 {
-		n += 1 + l + sovImage(uint64(l))
-	}
-	l = len(m.RegistryToken)
-	if l > 0 {
-		n += 1 + l + sovImage(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
-	return n
-}
-
-func (m *PullImageRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Image != nil {
-		l = m.Image.Size()
-		n += 1 + l + sovImage(uint64(l))
-	}
-	if m.Auth != nil {
-		l = m.Auth.Size()
 		n += 1 + l + sovImage(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
@@ -565,51 +249,12 @@ func sovImage(x uint64) (n int) {
 func sozImage(x uint64) (n int) {
 	return sovImage(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-func (this *ImageSpec) String() string {
-	if this == nil {
-		return "nil"
-	}
-	keysForAnnotations := make([]string, 0, len(this.Annotations))
-	for k, _ := range this.Annotations {
-		keysForAnnotations = append(keysForAnnotations, k)
-	}
-	github_com_gogo_protobuf_sortkeys.Strings(keysForAnnotations)
-	mapStringForAnnotations := "map[string]string{"
-	for _, k := range keysForAnnotations {
-		mapStringForAnnotations += fmt.Sprintf("%v: %v,", k, this.Annotations[k])
-	}
-	mapStringForAnnotations += "}"
-	s := strings.Join([]string{`&ImageSpec{`,
-		`Image:` + fmt.Sprintf("%v", this.Image) + `,`,
-		`Annotations:` + mapStringForAnnotations + `,`,
-		`XXX_unrecognized:` + fmt.Sprintf("%v", this.XXX_unrecognized) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *AuthConfig) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&AuthConfig{`,
-		`Username:` + fmt.Sprintf("%v", this.Username) + `,`,
-		`Password:` + fmt.Sprintf("%v", this.Password) + `,`,
-		`Auth:` + fmt.Sprintf("%v", this.Auth) + `,`,
-		`ServerAddress:` + fmt.Sprintf("%v", this.ServerAddress) + `,`,
-		`IdentityToken:` + fmt.Sprintf("%v", this.IdentityToken) + `,`,
-		`RegistryToken:` + fmt.Sprintf("%v", this.RegistryToken) + `,`,
-		`XXX_unrecognized:` + fmt.Sprintf("%v", this.XXX_unrecognized) + `,`,
-		`}`,
-	}, "")
-	return s
-}
 func (this *PullImageRequest) String() string {
 	if this == nil {
 		return "nil"
 	}
 	s := strings.Join([]string{`&PullImageRequest{`,
-		`Image:` + strings.Replace(this.Image.String(), "ImageSpec", "ImageSpec", 1) + `,`,
-		`Auth:` + strings.Replace(this.Auth.String(), "AuthConfig", "AuthConfig", 1) + `,`,
+		`Image:` + fmt.Sprintf("%v", this.Image) + `,`,
 		`XXX_unrecognized:` + fmt.Sprintf("%v", this.XXX_unrecognized) + `,`,
 		`}`,
 	}, "")
@@ -668,459 +313,6 @@ func (c *imageClient) PullImage(ctx context.Context, req *PullImageRequest) (*Pu
 	}
 	return &resp, nil
 }
-func (m *ImageSpec) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowImage
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ImageSpec: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ImageSpec: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Image", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowImage
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthImage
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthImage
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Image = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Annotations", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowImage
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthImage
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthImage
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Annotations == nil {
-				m.Annotations = make(map[string]string)
-			}
-			var mapkey string
-			var mapvalue string
-			for iNdEx < postIndex {
-				entryPreIndex := iNdEx
-				var wire uint64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowImage
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					wire |= uint64(b&0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				fieldNum := int32(wire >> 3)
-				if fieldNum == 1 {
-					var stringLenmapkey uint64
-					for shift := uint(0); ; shift += 7 {
-						if shift >= 64 {
-							return ErrIntOverflowImage
-						}
-						if iNdEx >= l {
-							return io.ErrUnexpectedEOF
-						}
-						b := dAtA[iNdEx]
-						iNdEx++
-						stringLenmapkey |= uint64(b&0x7F) << shift
-						if b < 0x80 {
-							break
-						}
-					}
-					intStringLenmapkey := int(stringLenmapkey)
-					if intStringLenmapkey < 0 {
-						return ErrInvalidLengthImage
-					}
-					postStringIndexmapkey := iNdEx + intStringLenmapkey
-					if postStringIndexmapkey < 0 {
-						return ErrInvalidLengthImage
-					}
-					if postStringIndexmapkey > l {
-						return io.ErrUnexpectedEOF
-					}
-					mapkey = string(dAtA[iNdEx:postStringIndexmapkey])
-					iNdEx = postStringIndexmapkey
-				} else if fieldNum == 2 {
-					var stringLenmapvalue uint64
-					for shift := uint(0); ; shift += 7 {
-						if shift >= 64 {
-							return ErrIntOverflowImage
-						}
-						if iNdEx >= l {
-							return io.ErrUnexpectedEOF
-						}
-						b := dAtA[iNdEx]
-						iNdEx++
-						stringLenmapvalue |= uint64(b&0x7F) << shift
-						if b < 0x80 {
-							break
-						}
-					}
-					intStringLenmapvalue := int(stringLenmapvalue)
-					if intStringLenmapvalue < 0 {
-						return ErrInvalidLengthImage
-					}
-					postStringIndexmapvalue := iNdEx + intStringLenmapvalue
-					if postStringIndexmapvalue < 0 {
-						return ErrInvalidLengthImage
-					}
-					if postStringIndexmapvalue > l {
-						return io.ErrUnexpectedEOF
-					}
-					mapvalue = string(dAtA[iNdEx:postStringIndexmapvalue])
-					iNdEx = postStringIndexmapvalue
-				} else {
-					iNdEx = entryPreIndex
-					skippy, err := skipImage(dAtA[iNdEx:])
-					if err != nil {
-						return err
-					}
-					if (skippy < 0) || (iNdEx+skippy) < 0 {
-						return ErrInvalidLengthImage
-					}
-					if (iNdEx + skippy) > postIndex {
-						return io.ErrUnexpectedEOF
-					}
-					iNdEx += skippy
-				}
-			}
-			m.Annotations[mapkey] = mapvalue
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipImage(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthImage
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *AuthConfig) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowImage
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: AuthConfig: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: AuthConfig: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Username", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowImage
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthImage
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthImage
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Username = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Password", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowImage
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthImage
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthImage
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Password = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Auth", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowImage
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthImage
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthImage
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Auth = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ServerAddress", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowImage
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthImage
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthImage
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ServerAddress = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 5:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field IdentityToken", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowImage
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthImage
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthImage
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.IdentityToken = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 6:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field RegistryToken", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowImage
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthImage
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthImage
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.RegistryToken = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipImage(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthImage
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
 func (m *PullImageRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -1154,7 +346,7 @@ func (m *PullImageRequest) Unmarshal(dAtA []byte) error {
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Image", wireType)
 			}
-			var msglen int
+			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowImage
@@ -1164,63 +356,23 @@ func (m *PullImageRequest) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if msglen < 0 {
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
 				return ErrInvalidLengthImage
 			}
-			postIndex := iNdEx + msglen
+			postIndex := iNdEx + intStringLen
 			if postIndex < 0 {
 				return ErrInvalidLengthImage
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Image == nil {
-				m.Image = &ImageSpec{}
-			}
-			if err := m.Image.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Auth", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowImage
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthImage
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthImage
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Auth == nil {
-				m.Auth = &AuthConfig{}
-			}
-			if err := m.Auth.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
+			m.Image = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
