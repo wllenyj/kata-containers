@@ -13,8 +13,31 @@ pub struct SandboxNetworkEnv {
     pub network_created: bool,
 }
 
+pub struct SandboxResource {
+    pub network: SandboxNetworkEnv,
+}
+
+#[derive(Default, Clone, Debug)]
+pub struct SandboxStatus {
+    pub sandbox_id: String,
+    pub pid: u32,
+    pub state: String,
+    pub info: std::collections::HashMap<String, String>,
+    pub create_at: std::time::Duration,
+    pub exited_at: std::time::Duration,
+}
+
 #[async_trait]
 pub trait Sandbox: Send + Sync {
+    async fn create(&self, network_env: SandboxNetworkEnv) -> Result<()> {
+        Ok(())
+    }
+    async fn status(&self) -> Result<SandboxStatus> {
+        Ok(SandboxStatus::default())
+    }
+    async fn wait(&self) -> Result<()> {
+        Ok(())
+    }
     async fn start(
         &self,
         dns: Vec<String>,

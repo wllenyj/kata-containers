@@ -509,8 +509,6 @@ checksum = "f3ad85c1f65dc7b37604eb0e89748faf0b9653065f2a8ef69f96a687ec1e9279"
 [[package]]
 name = "containerd-shim-protos"
 version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ef45f1c71aa587d8f657c546d8da38ea04f113dd05da0ef993c4515fa25fbdd1"
 dependencies = [
  "async-trait",
  "protobuf 3.2.0",
@@ -2648,6 +2646,8 @@ dependencies = [
  "containerd-shim-protos",
  "logging",
  "persist",
+ "protobuf 3.2.0",
+ "protobuf-codegen 3.2.0",
  "runtimes",
  "shim-interface",
  "slog",

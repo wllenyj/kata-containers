@@ -11,7 +11,7 @@ use anyhow::{anyhow, Context, Result};
 use common::{
     message::Message,
     types::{Request, Response},
-    RuntimeHandler, RuntimeInstance, Sandbox, SandboxNetworkEnv,
+    RuntimeHandler, RuntimeInstance, Sandbox, SandboxNetworkEnv, SandboxStatus,
 };
 use hypervisor::Param;
 use kata_sys_util::spec::load_oci_spec;
@@ -31,10 +31,14 @@ use tokio::sync::{mpsc::Sender, RwLock};
 use virt_container::{
     sandbox::{SandboxRestoreArgs, VirtSandbox},
     sandbox_persist::SandboxState,
-    VirtContainer,
+    VirtContainer, 
 };
 #[cfg(feature = "wasm")]
 use wasm_container::WasmContainer;
+
+pub struct CreateOpt {
+    pub netns_path: Option<String>,
+}
 
 struct RuntimeHandlerManagerInner {
     id: String,
@@ -49,6 +53,89 @@ impl RuntimeHandlerManagerInner {
             msg_sender,
             runtime_instance: None,
         })
+    }
+
+    pub async fn init_for_sandbox_api(&mut self, opt: &CreateOpt) -> Result<()> {
+        if self.runtime_instance.is_some() {
+            info!(sl!(), "runtime handler has been created for sandbox api.");
+            return Ok(());
+        }
+        info!(sl!(), "new runtime handler for sandbox api");
+
+        #[cfg(feature = "linux")]
+        LinuxContainer::init().context("init linux container")?;
+        #[cfg(feature = "wasm")]
+        WasmContainer::init().context("init wasm container")?;
+        #[cfg(feature = "virt")]
+        VirtContainer::init().context("init virt container")?;
+
+        // config
+        let oci = oci::Spec::default();
+        let config = Arc::new(load_config(&oci, &None).context("load config")?);
+
+        // TODO: merge config
+
+        // TODO: dns
+
+        // netns
+        let mut network_created = false;
+        // set netns to None if we want no network for the VM
+        let netns = if config.runtime.disable_new_netns {
+            None
+        } else if opt.netns_path.is_some() {
+            opt.netns_path.clone()
+        } else {
+            let ns_name = generate_netns_name();
+            let netns = NetNs::new(ns_name)?;
+            let path = PathBuf::from(netns.path()).to_str().map(|s| s.to_string());
+            info!(sl!(), "the netns path is {:?}", path);
+            network_created = true;
+            path
+        };
+        let network_env = SandboxNetworkEnv {
+            netns,
+            network_created,
+        };
+
+        // new runtime handler
+        let runtime_handler = match config.runtime.name.as_str() {
+            #[cfg(feature = "linux")]
+            name if name == LinuxContainer::name() => LinuxContainer::new_handler(),
+            #[cfg(feature = "wasm")]
+            name if name == WasmContainer::name() => WasmContainer::new_handler(),
+            #[cfg(feature = "virt")]
+            name if name == VirtContainer::name() || name.is_empty() => {
+                VirtContainer::new_handler()
+            }
+            _ => return Err(anyhow!("Unsupported runtime: {}", &config.runtime.name)),
+        };
+        let runtime_instance = runtime_handler
+            .new_instance(&self.id, self.msg_sender.clone(), config)
+            .await
+            .context("new runtime instance")?;
+
+        // start sandbox
+        runtime_instance
+            .sandbox
+            .create(network_env)
+            .await
+            .context("start sandbox")?;
+
+        self.runtime_instance = Some(Arc::new(runtime_instance));
+
+
+        // the sandbox creation can reach here only once and the sandbox is created
+        // so we can safely create the shim management socket right now
+        // the unwrap here is safe because the runtime handler is correctly created
+        let shim_mgmt_svr = MgmtServer::new(
+            &self.id,
+            self.runtime_instance.as_ref().unwrap().sandbox.clone(),
+        )
+        .context(ERR_NO_SHIM_SERVER)?;
+
+        tokio::task::spawn(Arc::new(shim_mgmt_svr).run());
+        info!(sl!(), "shim management http server starts");
+        return Ok(());
     }
 
     async fn init_runtime_handler(
@@ -253,6 +340,11 @@ impl RuntimeHandlerManager {
         inner.try_init(spec, state, options).await
     }
 
+    pub async fn sandbox_api_create(&self, opt: &CreateOpt) -> Result<()> {
+        let mut inner = self.inner.write().await;
+        inner.init_for_sandbox_api(opt).await
+    }
+
     pub async fn handler_message(&self, req: Request) -> Result<Response> {
         if let Request::CreateContainer(container_config) = req {
             // get oci spec
@@ -289,6 +381,48 @@ impl RuntimeHandlerManager {
         } else {
             self.handler_request(req).await.context("handler request")
         }
+    }
+
+    pub async fn sandbox_api_shutdown(&self) -> Result<()> {
+        let instance = self
+            .get_runtime_instance()
+            .await
+            .context("get runtime instance")?;
+        let sandbox = instance.sandbox.clone();
+        sandbox.shutdown().await.context("do shutdown")?;
+
+        Ok(())
+    }
+
+    pub async fn sandbox_api_stop(&self) -> Result<()> {
+        let instance = self
+            .get_runtime_instance()
+            .await
+            .context("get runtime instance")?;
+        let sandbox = instance.sandbox.clone();
+        sandbox.stop().await.context("stop sandbox")?;
+
+        Ok(())
+    }
+
+    pub async fn sandbox_api_status(&self) -> Result<SandboxStatus> {
+        let instance = self
+            .get_runtime_instance()
+            .await
+            .context("get runtime instance")?;
+        let sandbox = instance.sandbox.clone();
+        let status = sandbox.status().await?;
+        Ok(status)
+    }
+
+    pub async fn sandbox_api_wait(&self) -> Result<()> {
+        let instance = self
+            .get_runtime_instance()
+            .await
+            .context("get runtime instance")?;
+        let sandbox = instance.sandbox.clone();
+        sandbox.wait().await?;
+        Ok(())
     }
 
     pub async fn handler_request(&self, req: Request) -> Result<Response> {

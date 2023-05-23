@@ -76,6 +76,9 @@ pub trait Hypervisor: Send + Sync {
     async fn pause_vm(&self) -> Result<()>;
     async fn save_vm(&self) -> Result<()>;
     async fn resume_vm(&self) -> Result<()>;
+    async fn wait_vm(&self) -> Result<()> {
+        Ok(())
+    }
 
     // device manager
     async fn add_device(&self, device: device::Device) -> Result<()>;

@@ -34,29 +34,39 @@ impl ShimExecutor {
 
     fn do_start(&mut self) -> Result<PathBuf> {
         let bundle_path = get_bundle_path().context("get bundle path")?;
-        let spec = self.load_oci_spec(&bundle_path)?;
-        let (container_type, id) = k8s::container_type_with_id(&spec);
-
-        match container_type {
-            ContainerType::PodSandbox | ContainerType::SingleContainer => {
-                let address = self.socket_address(&self.args.id)?;
-                let socket = new_listener(&address)?;
-                let child_pid = self.create_shim_process(socket)?;
-                self.write_pid_file(&bundle_path, child_pid)?;
-                self.write_address(&bundle_path, &address)?;
-                Ok(address)
-            }
-            ContainerType::PodContainer => {
-                let sid = id
-                    .ok_or(Error::InvalidArgument)
-                    .context("get sid for container")?;
-                let (address, pid) = self.get_shim_info_from_sandbox(&sid)?;
-                self.write_pid_file(&bundle_path, pid)?;
-                self.write_address(&bundle_path, &address)?;
-                Ok(address)
-            }
-        }
+        let address = self.socket_address(&self.args.id)?;
+        let socket = new_listener(&address)?;
+        let child_pid = self.create_shim_process(socket)?;
+        self.write_pid_file(&bundle_path, child_pid)?;
+        self.write_address(&bundle_path, &address)?;
+        Ok(address)
     }
+
+    //fn do_start(&mut self) -> Result<PathBuf> {
+    //    let bundle_path = get_bundle_path().context("get bundle path")?;
+    //    let spec = self.load_oci_spec(&bundle_path)?;
+    //    let (container_type, id) = k8s::container_type_with_id(&spec);
+
+    //    match container_type {
+    //        ContainerType::PodSandbox | ContainerType::SingleContainer => {
+    //            let address = self.socket_address(&self.args.id)?;
+    //            let socket = new_listener(&address)?;
+    //            let child_pid = self.create_shim_process(socket)?;
+    //            self.write_pid_file(&bundle_path, child_pid)?;
+    //            self.write_address(&bundle_path, &address)?;
+    //            Ok(address)
+    //        }
+    //        ContainerType::PodContainer => {
+    //            let sid = id
+    //                .ok_or(Error::InvalidArgument)
+    //                .context("get sid for container")?;
+    //            let (address, pid) = self.get_shim_info_from_sandbox(&sid)?;
+    //            self.write_pid_file(&bundle_path, pid)?;
+    //            self.write_address(&bundle_path, &address)?;
+    //            Ok(address)
+    //        }
+    //    }
+    //}
 
     fn new_command(&self) -> Result<std::process::Command> {
         if self.args.id.is_empty()

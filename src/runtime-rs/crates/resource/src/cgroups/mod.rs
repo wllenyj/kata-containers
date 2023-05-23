@@ -42,15 +42,15 @@ pub struct CgroupConfig {
 impl CgroupConfig {
     fn new(sid: &str, toml_config: &TomlConfig) -> Result<Self> {
         let overhead_path = utils::gen_overhead_path(sid);
-        let spec = load_oci_spec()?;
-        let path = spec
-            .linux
-            // The trim of '/' is important, because cgroup_path is a relative path.
-            .map(|linux| linux.cgroups_path.trim_start_matches('/').to_string())
-            .unwrap_or_default();
+        //let spec = load_oci_spec()?;
+        //let path = spec
+        //    .linux
+        //    // The trim of '/' is important, because cgroup_path is a relative path.
+        //    .map(|linux| linux.cgroups_path.trim_start_matches('/').to_string())
+        //    .unwrap_or_default();
 
         Ok(Self {
-            path,
+            path: String::default(),
             overhead_path,
             sandbox_cgroup_only: toml_config.runtime.sandbox_cgroup_only,
         })
@@ -137,7 +137,12 @@ impl CgroupsResource {
 
         if let Some(overhead) = self.overhead_cgroup_manager.as_ref() {
             for cg_pid in overhead.tasks() {
-                overhead.remove_task(cg_pid)?;
+                overhead
+                    .remove_task(cg_pid)
+                    .map_err(|e| {
+                        info!(sl!(), "remove task failed. {:?}", e);
+                    })
+                    .ok();
             }
             overhead.delete().context("delete overhead")?;
         }
